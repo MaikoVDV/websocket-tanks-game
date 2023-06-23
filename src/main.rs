@@ -2,10 +2,14 @@
 use bevy::{
     prelude::*,
     log::LogPlugin,
+    tasks::TaskPool,
 };
 use tokio::{
     runtime,
+    runtime::Runtime,
     task::JoinHandle,
+    net::TcpStream,
+    sync::oneshot,
 };
 use tokio_tungstenite::{
     connect_async,
@@ -17,9 +21,6 @@ use crossbeam_channel::unbounded;
 
 use url::Url;
 // Standard library imports
-use std::{
-    net::SocketAddr,
-};
 
 
 // Importing crates written by yours, truly <3
@@ -35,7 +36,8 @@ use networking_plugin::{
     events::ConnectionEvent,
 };
 
-const SERVER_URL: &str = "wss://127.0.0.1:443";
+const SERVER_IP4: &str = "127.0.0.1";
+const SERVER_PORT: &str = "443";
 
 fn main() {
     let mut bevy_app = App::new();
