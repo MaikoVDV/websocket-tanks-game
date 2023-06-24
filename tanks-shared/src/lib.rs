@@ -16,7 +16,7 @@ pub mod game_manager;
 // The interval at which the game loop runs.
 const TICKS_PER_SECOND: u64 = 20;
 
-#[tokio::main]
-async fn main() {
-    println!("Shared library loaded.");
-}
+// #[tokio::main]
+// async fn main() {
+//     println!("Shared library loaded.");
+// }

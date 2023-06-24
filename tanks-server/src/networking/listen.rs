@@ -1,6 +1,6 @@
 use crate::*;
 
-// Listen for incoming data from clients.
+/// Listen for incoming data from clients. Runs in a separate tokio task for each client.
 pub async fn listen(
     event_sender: mpsc::UnboundedSender<ClientEvents>,
     ws_stream: WebSocketStream<TlsStream<TcpStream>>,
@@ -37,12 +37,12 @@ pub async fn listen(
                 break; // When we break, we disconnect.
             }
         } else {
+            // receiver.next returned None, meaning the stream was closed, and the cliend disconnected.
             break; // When we break, we disconnect.
         }
     }
-    // If we reach here, it means the client got disconnected.
+    
     // Send quit event to game loop, and the game loop will send quit event to the broadcast thread.
-    // So all cleanups will be done.
     info!("Client {} disconnected.", id);
     event_sender.send(ClientEvents::Disconnected(id)).expect("Failed to send ClientEvents::Quit(id)");
 }

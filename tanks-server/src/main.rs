@@ -1,8 +1,11 @@
 // Logging and Standard Libary imports
 use std::env;
+
 use env_logger;
 use log::*;
+use dotenv::dotenv;
 
+// Tokio!!!
 use tokio::{
     net::TcpListener,
     sync::mpsc,
@@ -13,17 +16,17 @@ use tokio_native_tls::{
         Identity
     },
 };
-use dotenv::dotenv;
 
-
+// Utilities for handling futures and streams.
 use futures_util::stream::StreamExt;
 
-// Importing crates written by yours, truly <3
+// Importing crates written by yours truly <3
 use tanks_shared::game_manager::{
     events::*,
     *
 };
 
+// Importing modules
 mod networking;
 
 use networking::{
@@ -38,10 +41,11 @@ const SERVER_PORT: &str = "443";
 
 #[tokio::main]
 async fn main() {
+    // Taking variables from the .env file and making them usable as regular environment variables.
     dotenv().ok();
     // Setting up a logger with timestaps
     let _ = env_logger::builder()
-        .filter_level(LevelFilter::Info)
+        .filter_level(LevelFilter::INFO)
         .format_timestamp_secs()
         .format_module_path(false)
         .format_target(false)
@@ -56,22 +60,27 @@ async fn main() {
         .expect("Listening to TCP failed.");
 
     // Create the TLS acceptor.
+    debug!("Creating TLS identity for encrypted connections.");
     let cert_path = match env::var("TLS_CERT_PATH") {
         Ok(value) => value,
-        Err(e) => {
+        Err(_) => {
             panic!("Couldn't find the directory for the TLS certification. It should be set in the .env file.")
         }
     };
     let certification_password = match env::var("TLS_CERT_PASSWORD") {
         Ok(value) => value,
-        Err(e) => {
+        Err(_) => {
             panic!("Couldn't find the directory for the TLS certification. It should be set in the .env file.")
         }
     };
     let der: &[u8] = &std::fs::read(&cert_path).expect(format!("Couldn't find the TLS certification file at '{}'.", &cert_path).as_str());
     let cert = Identity::from_pkcs12(der, &certification_password).expect("Couldn't create identity with given certification and password.");
-    let tls_acceptor =
-        tokio_native_tls::TlsAcceptor::from(TlsAcceptor::builder(cert).build().unwrap());
+
+    let tls_acceptor = tokio_native_tls::TlsAcceptor::from(
+        TlsAcceptor::builder(cert)
+            .build()
+            .unwrap()
+    );
 
     /*
         Broadcast data to all clients in a seperate async tokio green thread.
@@ -92,6 +101,7 @@ async fn main() {
 
     // Accept new clients.
     while let Ok((tcp_stream, peer)) = tcp_listener.accept().await {
+        debug!("Received connection request.");
         let tls_acceptor = tls_acceptor.clone();
         let tls_stream = tls_acceptor.accept(tcp_stream).await.unwrap();
 

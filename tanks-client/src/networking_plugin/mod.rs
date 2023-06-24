@@ -5,8 +5,20 @@ pub mod websocket_client;
 pub mod server_connection;
 pub mod events;
 
-pub use tokio_native_tls::TlsStream;
-// The NetworkPlugin that gets added to the Bevy app and handles all networking communications.
+// Importing networking stuff from libraries.
+pub use tokio::net::TcpStream;
+pub use tokio_tungstenite::{
+    WebSocketStream,
+};
+pub use tokio_native_tls::{
+    TlsStream,
+    {
+        native_tls::TlsConnector,
+        TlsConnector as TokioTlsConnector
+    }
+};
+
+/// The NetworkPlugin that gets added to the Bevy app and handles all networking communications.
 pub struct NetworkPlugin;
 impl Plugin for NetworkPlugin {
     fn build(&self, app: &mut App) {
@@ -15,6 +27,7 @@ impl Plugin for NetworkPlugin {
     }
 }
 
+/// Starts the connection process. Is a Bevy system, so runs every frame and only does something based on some input.
 pub fn create_new_connection(
     mut ws_client: ResMut<WebsocketClient>,
     keys: Res<Input<KeyCode>>,

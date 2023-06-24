@@ -9,6 +9,7 @@ use events::{
     BroadcastEvents,
 };
 
+/// The main game loop. Triggers GameWorld updates.
 pub async fn run_game_loop(
     mut client_input_receiver: mpsc::UnboundedReceiver<ClientEvents>,
 ) {
