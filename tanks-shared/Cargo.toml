@@ -6,3 +6,10 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+quick-protobuf = "0.8.1"
+tokio = { version = "1.28.2", default-features = false, features = ["io-util", "macros",  "time", "sync", "net", "rt-multi-thread"] }
+
+
+[build-dependencies]
+pb-rs = "0.10.0"
+walkdir = "2.3.2"

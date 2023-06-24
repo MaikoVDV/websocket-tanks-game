@@ -1,8 +1,11 @@
-use crate::*;
+use crate::{
+    *,
+    networking_plugin::*,
+};
 
 pub struct ServerConnection {
     pub server_url: Url,
-    pub ws_stream: WebSocketStream<MaybeTlsStream<TcpStream>>,
+    pub ws_stream: WebSocketStream<TlsStream<TcpStream>>,
 
     listen_task: JoinHandle<()>,
     broadcast_task: JoinHandle<()>,
@@ -10,7 +13,7 @@ pub struct ServerConnection {
 impl ServerConnection {
     pub fn new(
         server_url: Url,
-        ws_stream: WebSocketStream<MaybeTlsStream<TcpStream>>,
+        ws_stream: WebSocketStream<TlsStream<TcpStream>>,
         listen_task: JoinHandle<()>,
         broadcast_task: JoinHandle<()>
     ) -> ServerConnection {

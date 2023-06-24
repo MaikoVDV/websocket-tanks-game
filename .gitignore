@@ -1,0 +1,6 @@
+/**/target
+**/Cargo.lock
+**/.vscode
+tanks-shared/Cargo.lock
+TLS_Certifications
+**/.env

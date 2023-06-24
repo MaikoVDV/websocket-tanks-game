@@ -1,0 +1,6 @@
+syntax = "proto3";
+
+// Sent to all clients when a new client joins.
+message Client {
+    uint32 id = 1;
+}

@@ -5,6 +5,7 @@ pub mod websocket_client;
 pub mod server_connection;
 pub mod events;
 
+pub use tokio_native_tls::TlsStream;
 // The NetworkPlugin that gets added to the Bevy app and handles all networking communications.
 pub struct NetworkPlugin;
 impl Plugin for NetworkPlugin {

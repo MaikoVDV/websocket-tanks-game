@@ -1,4 +1,7 @@
-use crate::*;
+use crate::{
+    *,
+    networking_plugin::*
+};
 
 #[derive(Resource)]
 pub struct WebsocketClient {
@@ -10,6 +13,12 @@ pub struct WebsocketClient {
   pub events_channel: SyncChannel<ConnectionEvent>,
     pub debug: u16,
 }
+
+
+pub use native_tls::TlsConnector;
+pub use tokio_native_tls::TlsConnector as TokioTlsConnector;
+
+
 impl WebsocketClient {
     pub fn new() -> WebsocketClient {
         WebsocketClient {
@@ -28,20 +37,38 @@ impl WebsocketClient {
         info!("Connecting to websocket at {}", server_url);
         self.disconnect();
 
+
+
+
         // Channel used to send the ServerConnection from the connection task to the main task,
         // to put in the WebsocketClient.
         let (stream_tx, mut stream_rx) = oneshot::channel();
-
-        let url = server_url.clone();
         self.tokio_runtime.spawn(async move {
+            //let websocket_url = &addr;
+            // info!("{}", websocket_url);
+
+            // Create a TCP connection with the server
+            let tcp_stream = TcpStream::connect("127.0.0.1:443").await.expect("Failed to connect");
+            // Using TCP stream to create websocket and upgrading connetion with TLS (making it encrypted)
+            let tls_connector = TlsConnector::builder()
+                .danger_accept_invalid_certs(true)
+                .build()
+                .unwrap();
+            let tls_connector = TokioTlsConnector::from(tls_connector);
+            let tls_stream = tls_connector.connect("wss://127.0.0.1:443", tcp_stream).await.expect("Failed to connect with TLS.");
+
+            let (mut ws_stream, _) = tokio_tungstenite::client_async("wss://127.0.0.1:443", tls_stream)
+                .await
+                .expect("Failed to create websocket.");
+
             // Connecting to the websocket.
-            let ws_stream = match connect_async(url.clone()).await {
-                Ok((ws_stream, _response)) => ws_stream,
-                Err(e) => {
-                    error!("Failed to connect to server at '{}'. Here's the error: {}", url.to_string(), e.to_string());
-                    return;
-                }
-            };
+            // let ws_stream = match connect_async(url.clone()).await {
+            //     Ok((ws_stream, _response)) => ws_stream,
+            //     Err(e) => {
+            //         error!("Failed to connect to server at '{}'. Here's the error: {}", url.to_string(), e.to_string());
+            //         return;
+            //     }
+            // };
             
             // let server_conn = ServerConnection::new(server_url.clone(), ws_stream);
             stream_tx.send(ws_stream).expect("Failed to send WebSocketStream through OneShot channel. Maybe it was closed / dropped?");
@@ -56,10 +83,10 @@ impl WebsocketClient {
                 match stream_rx.await {
                     Ok(ws_stream) => {
                         info!("Received WebSocketStream through OneShot channel!");
-                        let listen_task = tokio::spawn(async move {
+                        let listen_task = self.tokio_runtime.spawn(async move {
 
                         });
-                        let broadcast_task = tokio::spawn(async move {
+                        let broadcast_task = self.tokio_runtime.spawn(async move {
 
                         });
 
