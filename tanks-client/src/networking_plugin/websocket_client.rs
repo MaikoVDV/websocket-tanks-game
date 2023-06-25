@@ -1,6 +1,10 @@
 use crate::{
     *,
-    networking_plugin::*
+    networking_plugin::{
+        *,
+        listen::listen,
+        broadcast::broadcast,
+    }
 };
 
 /// High-level struct for managing communication with the server.
@@ -65,17 +69,18 @@ impl WebsocketClient {
                 // Connecting to the websocket.
                 match stream_rx.await {
                     Ok(ws_stream) => {
-                        let listen_task = self.tokio_runtime.spawn(async move {
+                        let (ws_sender, ws_receiver) = ws_stream.split();
 
+                        let listen_task = self.tokio_runtime.spawn(async move {
+                            listen(ws_receiver).await;
                         });
                         let broadcast_task = self.tokio_runtime.spawn(async move {
-
+                            broadcast(ws_sender).await;
                         });
 
                         self.server_connection = Some(
                             ServerConnection::new(
                                 server_url,
-                                ws_stream,
                                 listen_task,
                                 broadcast_task
                         ));

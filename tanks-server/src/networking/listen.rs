@@ -4,12 +4,14 @@ use crate::*;
 pub async fn listen(
     event_sender: mpsc::UnboundedSender<ClientEvents>,
     ws_stream: WebSocketStream<TlsStream<TcpStream>>,
+    connections: Arc<DashMap<u32, ClientConnection>>,
     id: u32,
 ) {
     let (sender, mut receiver) = ws_stream.split();
     let conn = ClientConnection::new(id, sender);
 
     let _ = event_sender.send(ClientEvents::Connected(conn.id));
+    connections.insert(conn.id, conn);
     while let Some(msg) = receiver.next().await {
         if let Ok(msg) = msg {
             if msg.is_binary() {

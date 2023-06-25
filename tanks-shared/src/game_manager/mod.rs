@@ -2,6 +2,7 @@ use crate::*;
 
 pub mod game_world;
 pub mod events;
+pub mod proto_serialization;
 
 use game_world::GameWorld;
 use events::{
@@ -11,7 +12,8 @@ use events::{
 
 /// The main game loop. Triggers GameWorld updates.
 pub async fn run_game_loop(
-    mut client_input_receiver: mpsc::UnboundedReceiver<ClientEvents>,
+    broadcast_event_tx: mpsc::UnboundedSender<BroadcastEvents>,
+    mut client_input_rx: mpsc::UnboundedReceiver<ClientEvents>,
 ) {
     println!("Starting game loop!");
     let mut interval = tokio::time::interval(time::Duration::from_millis(1000 / TICKS_PER_SECOND));
@@ -23,12 +25,12 @@ pub async fn run_game_loop(
     loop {
         //let start = time::Instant::now();
         tokio::select! {
-            game_event = client_input_receiver.recv() => {
+            game_event = client_input_rx.recv() => {
                 if let Some(event) = game_event {
                     match event {
-                        ClientEvents::Connected(id) => {
+                        ClientEvents::Connected(client_id) => {
                             let mut game_world = GameWorld::new();
-                            game_world.add_client(id);
+                            game_world.add_client(client_id);
                             // let initial_state_message = state_messages::InitialState {
                             //     client_id: conn.id,
                             //     full_state: Some(state_messages::GameStateUpdate {
@@ -37,12 +39,11 @@ pub async fn run_game_loop(
                             //         bodies: game_world.bodies.values().cloned().collect(),
                             //     })
                             // };
-                            // let _ = broadcast_event_sender.send(
-                            //     BroadcastEvents::Join(conn, initial_state_message));
+                            let _ = broadcast_event_tx.send(BroadcastEvents::ClientConnected(client_id));
                         }
-                        ClientEvents::Disconnected(user_id) => {
-                            game_world.remove_client(user_id);
-                            // let _ = broadcast_event_sender.send(BroadcastEvents::Quit(user_id));
+                        ClientEvents::Disconnected(client_id) => {
+                            game_world.remove_client(client_id);
+                            let _ = broadcast_event_tx.send(BroadcastEvents::ClientDisconnected(client_id));
                         }
                         ClientEvents::Input(client_input) => {
                             // game_world.set_input(id, input);
@@ -57,6 +58,7 @@ pub async fn run_game_loop(
                 game_world.update();
 
                 // Send the game state to broadcast green thread.
+                let _ = broadcast_event_tx.send(BroadcastEvents::StateUpdate);
                 // let _ = broadcast_event_sender.send(BroadcastEvents::StateUpdateOut(game_world.get_state_updates()));
                 // game_world.game_state_updates.reset();
             }

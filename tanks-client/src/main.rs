@@ -16,7 +16,7 @@ use url::Url;
 // Standard library imports
 
 // Importing crates written by yours, truly <3
-use tanks_shared;
+// use tanks_shared;
 
 // Importing modules
 mod networking_plugin;

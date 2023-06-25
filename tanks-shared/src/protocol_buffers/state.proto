@@ -1,0 +1,6 @@
+syntax = "proto3";
+
+// Header 10
+message StateUpdate {
+    string test = 1;
+}

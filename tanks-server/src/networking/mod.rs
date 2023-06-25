@@ -1,5 +1,6 @@
 // Exposing sub-modules
 pub mod listen;
+pub mod broadcast;
 pub mod client_connection;
 
 // Networking library imports
@@ -12,4 +13,13 @@ pub use tokio_tungstenite::{
 };
 
 // Other imports
-use futures_util::stream::SplitSink;
+use futures_util::{
+    stream::SplitSink,
+    SinkExt,
+};
+pub use tanks_shared::{
+    game_manager::proto_serialization::proto_serialize,
+    proto_compiled::{
+        state as proto_state,
+    }
+};

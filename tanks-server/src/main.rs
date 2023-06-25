@@ -1,5 +1,8 @@
 // Logging and Standard Libary imports
-use std::env;
+use std::{
+    env,
+    sync::Arc,
+};
 
 use env_logger;
 use log::*;
@@ -17,8 +20,9 @@ use tokio_native_tls::{
     },
 };
 
-// Utilities for handling futures and streams.
+// Utilities for handling futures, streams and concurrency
 use futures_util::stream::StreamExt;
+use dashmap::DashMap;
 
 // Importing crates written by yours truly <3
 use tanks_shared::game_manager::{
@@ -32,6 +36,7 @@ mod networking;
 use networking::{
     *,
     listen::listen,
+    broadcast::broadcast,
     client_connection::ClientConnection,
 };
 
@@ -45,7 +50,7 @@ async fn main() {
     dotenv().ok();
     // Setting up a logger with timestaps
     let _ = env_logger::builder()
-        .filter_level(LevelFilter::INFO)
+        .filter_level(LevelFilter::Info)
         .format_timestamp_secs()
         .format_module_path(false)
         .format_target(false)
@@ -82,19 +87,23 @@ async fn main() {
             .unwrap()
     );
 
+    // HashMap that stores all of the connections with clients.
+    // Put in an Arc, so it can be shared between threads.
+    let connections: Arc<DashMap<u32, ClientConnection>> = Arc::new(DashMap::new());
     /*
         Broadcast data to all clients in a seperate async tokio green thread.
         The game loop will use 'broadcast_sender' to send the game state,
         and join&quit events into this function.
     */
-    // let (broadcast_sender, broadcast_receiver) = mpsc::unbounded_channel::<BroadcastEvents>();
-    // tokio::spawn(interval_broadcast(broadcast_receiver));
+    let (broadcast_event_tx, broadcast_event_rx) = mpsc::unbounded_channel::<BroadcastEvents>();
+    tokio::spawn(broadcast(broadcast_event_rx, Arc::clone(&connections)));
+    
     /*
         Since I will only use one game loop, I'm using an actual std::thread for the game loop.
         This function takes ownership of the 'broadcast_sender' to send events into the 'broadcast' green thread.
     */
-    let (game_sender, game_receiver) = mpsc::unbounded_channel::<ClientEvents>();
-    tokio::spawn(run_game_loop(game_receiver));
+    let (client_input_tx, client_input_rx) = mpsc::unbounded_channel::<ClientEvents>();
+    tokio::spawn(run_game_loop(broadcast_event_tx, client_input_rx));
 
     // // A counter to use as client ids.
     let mut id = 0;
@@ -110,7 +119,12 @@ async fn main() {
             Ok(ws_stream) => {
                 id += 1;
                 info!("New Connection: {} | Set id to: {}", peer, id);
-                tokio::spawn(listen(game_sender.clone(), ws_stream, id));
+                tokio::spawn(listen(
+                    client_input_tx.clone(),
+                    ws_stream,
+                    Arc::clone(&connections),
+                    id
+                ));
             }
         }
     }

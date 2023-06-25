@@ -5,10 +5,14 @@ pub mod websocket_client;
 pub mod server_connection;
 pub mod events;
 
+pub mod listen;
+pub mod broadcast;
+
 // Importing networking stuff from libraries.
 pub use tokio::net::TcpStream;
 pub use tokio_tungstenite::{
     WebSocketStream,
+    tungstenite::Message,
 };
 pub use tokio_native_tls::{
     TlsStream,
@@ -16,6 +20,13 @@ pub use tokio_native_tls::{
         native_tls::TlsConnector,
         TlsConnector as TokioTlsConnector
     }
+};
+pub use futures_util::{
+    stream::{
+        SplitStream,
+        SplitSink,
+    },
+    StreamExt,
 };
 
 /// The NetworkPlugin that gets added to the Bevy app and handles all networking communications.

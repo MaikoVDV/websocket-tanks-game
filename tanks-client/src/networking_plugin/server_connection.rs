@@ -8,7 +8,6 @@ use crate::{
 /// do the communicating with the server.
 pub struct ServerConnection {
     pub server_url: Url,
-    pub ws_stream: WebSocketStream<TlsStream<TcpStream>>,
 
     listen_task: JoinHandle<()>,
     broadcast_task: JoinHandle<()>,
@@ -16,14 +15,12 @@ pub struct ServerConnection {
 impl ServerConnection {
     pub fn new(
         server_url: Url,
-        ws_stream: WebSocketStream<TlsStream<TcpStream>>,
         listen_task: JoinHandle<()>,
         broadcast_task: JoinHandle<()>
     ) -> ServerConnection {
         info!("Connected to server!");
         ServerConnection {
             server_url,
-            ws_stream,
             listen_task,
             broadcast_task,
         }

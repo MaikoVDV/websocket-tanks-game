@@ -11,5 +11,7 @@ pub enum ClientEvents {
 
 // Sent based on something in the GameWorld that needs to be sent to all connected clients
 pub enum BroadcastEvents {
-
+    StateUpdate,
+    ClientConnected(u32),
+    ClientDisconnected(u32),
 }
